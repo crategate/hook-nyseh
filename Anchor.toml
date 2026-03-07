@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-hook_nyseh = "GnEVj1u2iJjDhSqVgtn13oBugKP1QEEn33MPn9VVRbu"
+hook_nyseh = "4LbmarCqUDkJqXetsHZaGWsav5MJya6xgvASPDwd6pce"
 
 [registry]
 url = "https://api.apr.dev"
