@@ -7,14 +7,14 @@ use anchor_spl::{
     token_interface::{Mint, TokenAccount, TokenInterface},
 };
 use spl_tlv_account_resolution::{
-    state::ExtraAccountMetaList, seeds::Seed, account::ExtraAccountMeta,
+    state::ExtraAccountMetaList,
 };
 use spl_transfer_hook_interface::instruction::{ExecuteInstruction, TransferHookInstruction};
 
 declare_id!("4LbmarCqUDkJqXetsHZaGWsav5MJya6xgvASPDwd6pce");
 
 #[program]
-pub mod hook_nyseh {
+pub mod transfer_hook {
     use super::*;
 
     pub fn initialize_extra_account_meta_list(
@@ -99,7 +99,7 @@ pub struct InitializeExtraAccountMetaList<'info> {
     /// CHECK: ExtraAccountMetaList Account, must use these seeds
     #[account(
         mut,
-        seeds = [b"extra-account-metas", mint.key().as_ref()],
+        seeds = [b"extra-account-metas", mint.key().as_ref()], 
         bump
     )]
     pub extra_account_meta_list: AccountInfo<'info>,
@@ -129,8 +129,9 @@ pub struct TransferHook<'info> {
     pub owner: UncheckedAccount<'info>,
     /// CHECK: ExtraAccountMetaList Account,
     #[account(
-        seeds = [b"extra-account-metas", mint.key().as_ref()],
+        seeds = [b"extra-account-metas", mint.key().as_ref()], 
         bump
     )]
     pub extra_account_meta_list: UncheckedAccount<'info>,
 }
+
