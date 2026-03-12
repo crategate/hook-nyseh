@@ -61,7 +61,10 @@ describe("transfer-hook", () => {
 		[Buffer.from("extra-account-metas"), mint.publicKey.toBuffer()],
 		program.programId
 	);
-
+	const [counterPDA] = PublicKey.findProgramAddressSync(
+		[Buffer.from("counter")],
+		program.programId
+	);
 	it("Create Mint Account with Transfer Hook Extension", async () => {
 		const extensions = [ExtensionType.TransferHook];
 		const mintLen = getMintLen(extensions);
@@ -151,6 +154,7 @@ describe("transfer-hook", () => {
 				mint: mint.publicKey,
 				extraAccountMetaList: extraAccountMetaListPDA,
 				tokenProgram: TOKEN_2022_PROGRAM_ID,
+				counter: counterPDA,
 			})
 			.instruction()
 		const transaction = new Transaction().add(
@@ -184,9 +188,22 @@ describe("transfer-hook", () => {
 			"confirmed",
 			TOKEN_2022_PROGRAM_ID
 		);
+		const transferInstruction2 = await createTransferCheckedWithTransferHookInstruction(
+			connection,
+			sourceTokenAccount,
+			mint.publicKey,
+			destinationTokenAccount,
+			wallet.publicKey,
+			bigIntAmount,
+			decimals,
+			[],
+			"confirmed",
+			TOKEN_2022_PROGRAM_ID
+		);
+		console.log("COUNTER PDA::: " + counterPDA);
 
 		const transaction = new Transaction().add(
-			transferInstruction
+			transferInstruction, transferInstruction2
 		);
 
 		const txSig = await sendAndConfirmTransaction(

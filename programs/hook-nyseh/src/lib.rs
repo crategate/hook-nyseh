@@ -7,14 +7,23 @@ use anchor_spl::{
     token_interface::{Mint, TokenAccount, TokenInterface},
 };
 use spl_tlv_account_resolution::{
-    state::ExtraAccountMetaList,
+    state::ExtraAccountMetaList, seeds::Seed, account::ExtraAccountMeta
 };
 use spl_transfer_hook_interface::instruction::{ExecuteInstruction, TransferHookInstruction};
+use spl_transfer_hook_interface::*;
 
 declare_id!("4LbmarCqUDkJqXetsHZaGWsav5MJya6xgvASPDwd6pce");
 
+#[error_code]
+pub enum MyError {
+    #[msg("Amount must be less than 50")]
+    AmountTooLarge,
+}
+
 #[program]
 pub mod transfer_hook {
+    use spl_tlv_account_resolution::account::ExtraAccountMeta;
+
     use super::*;
 
     pub fn initialize_extra_account_meta_list(
@@ -23,7 +32,7 @@ pub mod transfer_hook {
 
         // The `addExtraAccountsToInstruction` JS helper function resolving incorrectly
         let account_metas = vec![
-            
+           ExtraAccountMeta::new_with_seeds( &[Seed::Literal{bytes: "counter".as_bytes().to_vec()}], false, true).unwrap(),
         ];
 
         // calculate account size
@@ -64,7 +73,10 @@ pub mod transfer_hook {
 
     pub fn transfer_hook(ctx: Context<TransferHook>, amount: u64) -> Result<()> {
 
-        msg!("Hello Transfer Hook!");
+     //   ctx.accounts.counter.count.checked_add(1).unwrap();
+
+     //   msg!("the counter is at: {}", ctx.accounts.counter.count);
+        msg!("Did hit one transfer hook call");
 
         Ok(())
     }
@@ -90,6 +102,10 @@ pub mod transfer_hook {
         }
     }
 }
+#[account]
+pub struct Counter{
+    pub count: u64,
+}
 
 #[derive(Accounts)]
 pub struct InitializeExtraAccountMetaList<'info> {
@@ -107,7 +123,19 @@ pub struct InitializeExtraAccountMetaList<'info> {
     pub token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
+    #[account(
+        init,
+        payer = payer,
+        seeds = [b"counter"],
+        bump,
+        space = 16
+    )]
+    pub counter: Account<'info, Counter>,
 }
+
+
+
+
 
 // Order of accounts matters for this struct.
 // The first 4 accounts are the accounts required for token transfer (source, mint, destination, owner)
@@ -127,11 +155,17 @@ pub struct TransferHook<'info> {
     pub destination_token: InterfaceAccount<'info, TokenAccount>,
     /// CHECK: source token account owner, can be SystemAccount or PDA owned by another program
     pub owner: UncheckedAccount<'info>,
-    /// CHECK: ExtraAccountMetaList Account,
-    #[account(
-        seeds = [b"extra-account-metas", mint.key().as_ref()], 
-        bump
-    )]
-    pub extra_account_meta_list: UncheckedAccount<'info>,
-}
+  //  /// CHECK: ExtraAccountMetaList Account,
+  //  #[account(
+  //      seeds = [b"extra-account-metas", mint.key().as_ref()], 
+  //      bump
+  //  )]
+  //  pub extra_account_meta_list: UncheckedAccount<'info>,
+  //#[account(
+  //      mut,
+  //      seeds = [b"counter"],
+  //      bump
+  //  )]
+  //  pub counter: Account<'info, Counter>,
 
+}
