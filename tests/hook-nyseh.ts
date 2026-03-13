@@ -8,6 +8,7 @@ import {
 	Transaction,
 	sendAndConfirmTransaction,
 	Keypair,
+	Connection,
 } from "@solana/web3.js";
 import {
 	ExtensionType,
@@ -30,7 +31,7 @@ describe("transfer-hook", () => {
 
 	const program = anchor.workspace.TransferHook as Program<TransferHook>;
 	const wallet = provider.wallet as anchor.Wallet;
-	const connection = provider.connection;
+	const connection = new Connection("http://api.devnet.solana.com", "confirmed");
 
 	// Generate keypair to use as address for the transfer-hook enabled mint
 	const mint = new Keypair();
@@ -160,6 +161,7 @@ describe("transfer-hook", () => {
 		const transaction = new Transaction().add(
 			initializeExtraAccountMetaListInstruction
 		);
+
 
 		const txSig = await sendAndConfirmTransaction(
 			provider.connection,

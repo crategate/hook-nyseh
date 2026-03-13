@@ -1,5 +1,5 @@
+use anchor_lang::prelude::*;
 use anchor_lang::{
-    prelude::*,
     system_program::{create_account, CreateAccount},
 };
 use anchor_spl::{
@@ -12,12 +12,14 @@ use spl_tlv_account_resolution::{
 use spl_transfer_hook_interface::instruction::{ExecuteInstruction, TransferHookInstruction};
 use spl_transfer_hook_interface::*;
 
-declare_id!("4LbmarCqUDkJqXetsHZaGWsav5MJya6xgvASPDwd6pce");
+declare_id!("H6GuDmhiRsYi31iiiYYdNn1Zi4jRKJdyxG6zry6xdynF");
 
 #[error_code]
 pub enum MyError {
     #[msg("Amount must be less than 50")]
     AmountTooLarge,
+    #[msg("invalid instruction discriminator probably")]
+    InvalidInstruction,
 }
 
 #[program]
@@ -73,10 +75,9 @@ pub mod transfer_hook {
 
     pub fn transfer_hook(ctx: Context<TransferHook>, amount: u64) -> Result<()> {
 
-     //   ctx.accounts.counter.count.checked_add(1).unwrap();
+        ctx.accounts.counter.count.checked_add(1).unwrap();
 
-     //   msg!("the counter is at: {}", ctx.accounts.counter.count);
-        msg!("Did hit one transfer hook call");
+        msg!("the COUNTER is at: {}", ctx.accounts.counter.count);
 
         Ok(())
     }
@@ -87,19 +88,33 @@ pub mod transfer_hook {
         accounts: &'info [AccountInfo<'info>],
         data: &[u8],
     ) -> Result<()> {
-        let instruction = TransferHookInstruction::unpack(data).unwrap();
+         let mut data = data;
+    if data.len() < 8 {
+        return Err(MyError::InvalidInstruction.into());
+    }
 
-        // match instruction discriminator to transfer hook interface execute instruction  
-        // token2022 program CPIs this instruction on token transfer
-        match instruction {
-            TransferHookInstruction::Execute { amount } => {
-                let amount_bytes = amount.to_le_bytes();
+    let instruction_discriminator = &data[..8];
+    let instruction_data = &data[8..];
 
-                // invoke custom transfer hook instruction on our program
-                __private::__global::transfer_hook(program_id, accounts, &amount_bytes)
-            }
-            _ => return Err(ProgramError::InvalidInstructionData.into()),
-        }
+    // Check for "InitializeExtraAccountMetaList" 8-byte discriminator
+    if instruction_discriminator == [43, 34, 13, 49, 167, 88, 235, 92] {
+        return __private::__global::initialize_extra_account_meta_list(
+            program_id,
+            accounts,
+            instruction_data,
+        );
+    }
+
+    // Check for "Execute" (the transfer hook itself) 8-byte discriminator
+    if instruction_discriminator == [105, 37, 101, 197, 75, 251, 102, 26] {
+        return __private::__global::transfer_hook(
+            program_id,
+            accounts,
+            instruction_data,
+        );
+    }
+
+    Err(MyError::InvalidInstruction.into())
     }
 }
 #[account]
@@ -155,17 +170,17 @@ pub struct TransferHook<'info> {
     pub destination_token: InterfaceAccount<'info, TokenAccount>,
     /// CHECK: source token account owner, can be SystemAccount or PDA owned by another program
     pub owner: UncheckedAccount<'info>,
-  //  /// CHECK: ExtraAccountMetaList Account,
-  //  #[account(
-  //      seeds = [b"extra-account-metas", mint.key().as_ref()], 
-  //      bump
-  //  )]
-  //  pub extra_account_meta_list: UncheckedAccount<'info>,
-  //#[account(
-  //      mut,
-  //      seeds = [b"counter"],
-  //      bump
-  //  )]
-  //  pub counter: Account<'info, Counter>,
+    /// CHECK: ExtraAccountMetaList Account,
+    #[account(
+        seeds = [b"extra-account-metas", mint.key().as_ref()], 
+        bump
+    )]
+    pub extra_account_meta_list: UncheckedAccount<'info>,
+  #[account(
+        mut,
+        seeds = [b"counter"],
+        bump
+    )]
+    pub counter: Account<'info, Counter>,
 
 }
